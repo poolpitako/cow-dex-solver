@@ -1,0 +1,62 @@
+{
+    "contractName": "Vault",
+    "abi": [
+        {
+            "type": "function",
+            "stateMutability": "view",
+            "outputs": [{
+                "type": "uint256",
+                "name": ""
+            }],
+            "name": "pricePerShare",
+            "inputs": [],
+            "gas": 77734
+        },
+        {
+            "type": "function",
+            "stateMutability": "view",
+            "outputs": [{
+                "type": "address",
+                "name": ""
+            }],
+            "name": "token",
+            "inputs": [],
+            "gas": 3798
+        },
+        {
+            "type": "function",
+            "stateMutability": "view",
+            "outputs": [{
+                "type": "uint256",
+                "name": ""
+            }],
+            "name": "availableDepositLimit",
+            "inputs": [],
+            "gas": 21381
+        },
+        {
+            "type": "function",
+            "stateMutability": "view",
+            "outputs": [{
+                "type": "string",
+                "name": ""
+            }],
+            "name": "name",
+            "inputs": [],
+            "gas": 13920
+        },
+        {
+            "type": "function",
+            "stateMutability": "nonpayable",
+            "outputs": [{
+                "type": "uint256",
+                "name": ""
+            }],
+            "name": "deposit",
+            "inputs": [{
+                "type": "uint256",
+                "name": "_amount"
+            }]
+        }
+    ]
+  }
