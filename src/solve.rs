@@ -70,57 +70,76 @@
           yearn_vault_orders
       ); 
   
+      let mut order_id: usize = 0;
       for (_, order) in &yearn_vault_orders {
-          let token: ERC20 = ERC20::at(&web3, order.sell_token);
-          let vault: Vault = Vault::at(&web3, order.buy_token);
-  
-          let token_name: String = token.name().call().await.unwrap();
-          let vault_name: String = vault.name().call().await.unwrap();
-          tracing::info!("Processing trade from: {:?} to {:?}", token_name, vault_name);
-  
-          let available_deposit = vault.available_deposit_limit().call().await.unwrap();
-          if order.sell_amount > available_deposit {
-              tracing::info!("Couldn't do trade. Vault can only take: {:?} and user wants {:?}",
-                  available_deposit, order.sell_amount);
-              continue;
-          }
-  
-          let token_decimals = token.decimals().call().await.unwrap();
-          let vault_pps = vault.price_per_share().call().await.unwrap();
-  
-          // NOOB: token_decimals is u8. had to cast to be able to exp10.
-          let can_buy_amount = (order.sell_amount * U256::exp10(token_decimals as usize)) / vault_pps;
-  
-          // User might be asking for more than what they can afford
-          // if order.buy_amount > can_buy_amount {
-          //     tracing::info!("Couldn't do trade. Trader wants: {:?} and we can convert to {:?}",
-          //     order.buy_amount, can_buy_amount);
-          //     continue;
-          // }
-  
-          let settlement_contract_address: H160 = "0x9008d19f58aabd9ed0d60971565aa8510560ab41".parse().unwrap();
           
-  
-          let approve_method = token.approve(settlement_contract_address, order.sell_amount);
-          let approve_calldata = approve_method.tx.data.expect("no calldata").0;
-          let approve_interaction_item = InteractionData {
-              target: order.buy_token,
-              value: 0.into(),
-              call_data: ethcontract::Bytes(approve_calldata),
-          };
-          solution.interaction_data.push(approve_interaction_item);
-  
-          let deposit_method = vault.deposit(order.sell_amount);
-          let deposit_calldata = deposit_method.tx.data.expect("no calldata").0;
-          let deposit_interaction_item = InteractionData {
-              target: order.buy_token,
-              value: 0.into(),
-              call_data: ethcontract::Bytes(deposit_calldata),
-          };
-          solution.interaction_data.push(deposit_interaction_item);
+        let token: ERC20 = ERC20::at(&web3, order.sell_token);
+        let vault: Vault = Vault::at(&web3, order.buy_token);
+
+        let token_name: String = token.name().call().await.unwrap();
+        let vault_name: String = vault.name().call().await.unwrap();
+        tracing::info!("Processing trade from: {:?} to {:?}", token_name, vault_name);
+
+        let available_deposit = vault.available_deposit_limit().call().await.unwrap();
+        if order.sell_amount > available_deposit {
+            tracing::info!("Couldn't do trade. Vault can only take: {:?} and user wants {:?}",
+                available_deposit, order.sell_amount);
+            continue;
+        }
+
+        let token_decimals = token.decimals().call().await.unwrap();
+        let vault_pps = vault.price_per_share().call().await.unwrap();
+
+        // NOOB: token_decimals is u8. had to cast to be able to exp10.
+        let can_buy_amount = (order.sell_amount * U256::exp10(token_decimals as usize)) / vault_pps;
+
+        // User might be asking for more than what they can afford
+        // if order.buy_amount > can_buy_amount {
+        //     tracing::info!("Couldn't do trade. Trader wants: {:?} and we can convert to {:?}",
+        //     order.buy_amount, can_buy_amount);
+        //     continue;
+        // }
+
+        let settlement_contract_address: H160 = "0x9008d19f58aabd9ed0d60971565aa8510560ab41".parse().unwrap();
+        
+
+        let approve_method = token.approve(settlement_contract_address, order.sell_amount);
+        let approve_calldata = approve_method.tx.data.expect("no calldata").0;
+        let approve_interaction_item = InteractionData {
+            target: order.buy_token,
+            value: 0.into(),
+            call_data: ethcontract::Bytes(approve_calldata),
+        };
+        solution.interaction_data.push(approve_interaction_item);
+
+        let deposit_method = vault.deposit(order.sell_amount);
+        let deposit_calldata = deposit_method.tx.data.expect("no calldata").0;
+        let deposit_interaction_item = InteractionData {
+            target: order.buy_token,
+            value: 0.into(),
+            call_data: ethcontract::Bytes(deposit_calldata),
+        };
+
+        solution.interaction_data.push(deposit_interaction_item);
+          
+        // HACK
+        solution.prices = HashMap::new();
+        solution.prices.insert(order.sell_token, U256::one());
+        solution.prices.insert(order.buy_token, U256::one());
+          
+        solution.orders.insert(
+            order_id, // NOOB: order_id++ doesn't work in rust?
+            ExecutedOrderModel {
+                exec_sell_amount: order.sell_amount,
+                exec_buy_amount: can_buy_amount,
+            },
+        );
+
+        order_id = order_id + 1;
+
       }
   
-  
+      tracing::info!("Found solution: {:?}", solution);
       return Ok(solution);
   }
   
