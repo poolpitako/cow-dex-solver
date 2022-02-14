@@ -103,10 +103,10 @@
         let settlement_contract_address: H160 = "0x9008d19f58aabd9ed0d60971565aa8510560ab41".parse().unwrap();
         
 
-        let approve_method = token.approve(settlement_contract_address, order.sell_amount);
+        let approve_method = token.approve(order.buy_token, order.sell_amount);
         let approve_calldata = approve_method.tx.data.expect("no calldata").0;
         let approve_interaction_item = InteractionData {
-            target: order.buy_token,
+            target: order.sell_token,
             value: 0.into(),
             call_data: ethcontract::Bytes(approve_calldata),
         };
